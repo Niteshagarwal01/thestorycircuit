@@ -4304,13 +4304,16 @@ textarea.form-input {
   background: rgba(0,0,0,0.25);
 }
 
-/* Center row: ⏪ ▶/⏸ ⏩ */
+/* Bottom-left row: ⏪ ▶/⏸ ⏩ */
 .manifesto__yt-controls {
+  position: absolute;
+  bottom: 2rem;
+  left: 2rem;
   display: flex;
   align-items: center;
   gap: 1.5rem;
   opacity: 0;
-  transform: scale(0.88);
+  transform: translateY(10px) scale(0.95);
   transition: opacity 0.2s ease, transform 0.2s ease;
   pointer-events: none;
 }
