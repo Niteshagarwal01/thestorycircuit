@@ -1,22 +1,7 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-
-const SERVICES = [
-  { value: 'video', label: 'Video Production' },
-  { value: 'reels', label: 'Vertical Content / Reels' },
-  { value: 'branding', label: 'Branding & Direction' },
-  { value: 'package', label: 'Monthly Package' },
-  { value: 'custom', label: 'Custom Project' },
-];
-
-const BUDGETS = [
-  { value: 'under-50k', label: 'Under ₹50,000' },
-  { value: '50k-1l', label: '₹50,000 – ₹1,00,000' },
-  { value: '1l-3l', label: '₹1,00,000 – ₹3,00,000' },
-  { value: '3l-plus', label: '₹3,00,000+' },
-];
 
 const CONTACT_CARDS = [
   {
@@ -45,81 +30,48 @@ const CONTACT_CARDS = [
   },
 ];
 
-/* ── Custom Dropdown ── */
-function Dropdown({ options, value, onChange, placeholder }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-
-  const selected = options.find(o => o.value === value);
-
-  useEffect(() => {
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  return (
-    <div className="cdd" ref={ref}>
-      <button
-        type="button"
-        className={`cdd__trigger${open ? ' cdd__trigger--open' : ''}`}
-        onClick={() => setOpen(v => !v)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-      >
-        <span className={selected ? 'cdd__trigger-value' : 'cdd__trigger-placeholder'}>
-          {selected ? selected.label : placeholder}
-        </span>
-        <svg
-          className={`cdd__chevron${open ? ' cdd__chevron--up' : ''}`}
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-        >
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
-      </button>
-
-      {open && (
-        <ul className="cdd__menu" role="listbox">
-          {options.map(opt => (
-            <li
-              key={opt.value}
-              role="option"
-              aria-selected={opt.value === value}
-              className={`cdd__option${opt.value === value ? ' cdd__option--selected' : ''}`}
-              onClick={() => { onChange(opt.value); setOpen(false); }}
-            >
-              {opt.value === value && (
-                <svg className="cdd__option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <polyline points="20 6 9 17 4 12"/>
-                </svg>
-              )}
-              {opt.label}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-/* ── Page ── */
 export default function ContactPage() {
-  const [form, setForm] = useState({ name: '', email: '', company: '', phone: '', budget: '', service: '', message: '' });
+  const [form, setForm] = useState({ name: '', email: '', company: '', phone: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e) => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  const handleDropdown = (field) => (val) => setForm(prev => ({ ...prev, [field]: val }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setSuccess(true);
-    setSubmitting(false);
-    setForm({ name: '', email: '', company: '', phone: '', budget: '', service: '', message: '' });
+    setError('');
+
+    try {
+      const res = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          access_key: process.env.NEXT_PUBLIC_WEB3FORMS_KEY,
+          subject: `New Lead: ${form.name} — The Story Circuit`,
+          from_name: 'The Story Circuit Website',
+          replyto: form.email,
+          name: form.name,
+          email: form.email,
+          company: form.company || 'Not provided',
+          phone: form.phone || 'Not provided',
+          message: form.message,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setSuccess(true);
+        setForm({ name: '', email: '', company: '', phone: '', message: '' });
+      } else {
+        setError('Something went wrong. Please try again or WhatsApp us directly.');
+      }
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -127,7 +79,6 @@ export default function ContactPage() {
       <Navbar />
       <main className="ct-page">
 
-        {/* ── Hero ── */}
         <section className="ct-hero">
           <div className="ct-hero__orb ct-hero__orb--1" />
           <div className="ct-hero__orb ct-hero__orb--2" />
@@ -141,12 +92,10 @@ export default function ContactPage() {
           </div>
         </section>
 
-        {/* ── Main Grid ── */}
         <section className="ct-body">
           <div className="container">
             <div className="ct-grid">
 
-              {/* LEFT */}
               <div className="ct-left">
                 <h2 className="ct-left__heading">Get in touch</h2>
                 <div className="ct-cards">
@@ -174,7 +123,6 @@ export default function ContactPage() {
                 </div>
               </div>
 
-              {/* RIGHT: Form */}
               <div className="ct-right">
                 <div className="ct-form-card">
                   <h2 className="ct-form-card__heading">Tell us about your project</h2>
@@ -186,6 +134,12 @@ export default function ContactPage() {
                     </div>
                   )}
 
+                  {error && (
+                    <div style={{ color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', padding: '1rem', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                      {error}
+                    </div>
+                  )}
+
                   <form onSubmit={handleSubmit} className="ct-form">
                     <div className="ct-form__row">
                       <div className="ct-form__group">
@@ -193,8 +147,8 @@ export default function ContactPage() {
                         <input className="ct-form__input" id="name" name="name" type="text" required placeholder="Your name" value={form.name} onChange={handleChange} />
                       </div>
                       <div className="ct-form__group">
-                        <label className="ct-form__label" htmlFor="email">Email Address *</label>
-                        <input className="ct-form__input" id="email" name="email" type="email" required placeholder="you@company.com" value={form.email} onChange={handleChange} />
+                        <label className="ct-form__label" htmlFor="email">Email Address</label>
+                        <input className="ct-form__input" id="email" name="email" type="email" placeholder="you@company.com" value={form.email} onChange={handleChange} />
                       </div>
                     </div>
 
@@ -204,35 +158,14 @@ export default function ContactPage() {
                         <input className="ct-form__input" id="company" name="company" type="text" placeholder="Brand name" value={form.company} onChange={handleChange} />
                       </div>
                       <div className="ct-form__group">
-                        <label className="ct-form__label" htmlFor="phone">Phone</label>
-                        <input className="ct-form__input" id="phone" name="phone" type="tel" placeholder="+91 ..." value={form.phone} onChange={handleChange} />
-                      </div>
-                    </div>
-
-                    <div className="ct-form__row">
-                      <div className="ct-form__group">
-                        <label className="ct-form__label">Service Interested In</label>
-                        <Dropdown
-                          options={SERVICES}
-                          value={form.service}
-                          onChange={handleDropdown('service')}
-                          placeholder="Select a service"
-                        />
-                      </div>
-                      <div className="ct-form__group">
-                        <label className="ct-form__label">Approximate Budget</label>
-                        <Dropdown
-                          options={BUDGETS}
-                          value={form.budget}
-                          onChange={handleDropdown('budget')}
-                          placeholder="Select budget range"
-                        />
+                        <label className="ct-form__label" htmlFor="phone">Phone *</label>
+                        <input className="ct-form__input" id="phone" name="phone" type="tel" required placeholder="+91 ..." value={form.phone} onChange={handleChange} />
                       </div>
                     </div>
 
                     <div className="ct-form__group">
-                      <label className="ct-form__label" htmlFor="message">Project Brief *</label>
-                      <textarea className="ct-form__textarea" id="message" name="message" required placeholder="Tell us about your project, goals, timeline, and anything else we should know..." value={form.message} onChange={handleChange} rows={5} />
+                      <label className="ct-form__label" htmlFor="message">Project Brief</label>
+                      <textarea className="ct-form__textarea" id="message" name="message" placeholder="Tell us about your project, goals, timeline, and anything else we should know..." value={form.message} onChange={handleChange} rows={5} />
                     </div>
 
                     <button type="submit" className="ct-form__submit" disabled={submitting}>

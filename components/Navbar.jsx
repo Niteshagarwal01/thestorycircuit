@@ -80,10 +80,9 @@ export default function Navbar() {
         ))}
         <Link
           href="/contact"
-          className="btn btn--primary"
-          style={{ marginTop: '0.5rem', borderRadius: '100px' }}
+          className="navbar__mobile-cta"
         >
-          Book a Call
+          Start a Project &rarr;
         </Link>
       </div>
     </>
