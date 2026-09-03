@@ -3,6 +3,8 @@ import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
+import { createClient } from '@/lib/supabase/client';
+
 const CONTACT_CARDS = [
   {
     icon: (
@@ -44,6 +46,20 @@ export default function ContactPage() {
     setError('');
 
     try {
+      // 1. Save to Supabase (so it shows on the Admin Dashboard)
+      const supabase = createClient();
+      await supabase.from('enquiries').insert([
+        {
+          name: form.name,
+          email: form.email,
+          company: form.company || null,
+          phone: form.phone || null,
+          message: form.message,
+          status: 'new'
+        }
+      ]);
+
+      // 2. Send email notification via Web3Forms
       const res = await fetch('https://api.web3forms.com/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,7 +84,7 @@ export default function ContactPage() {
         setError('Something went wrong. Please try again or WhatsApp us directly.');
       }
     } catch {
-      setError('Network error. Please try again.');
+      setError('A network error occurred. Please try again.');
     } finally {
       setSubmitting(false);
     }
