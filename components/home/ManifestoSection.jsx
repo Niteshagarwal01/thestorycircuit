@@ -69,6 +69,8 @@ export default function ManifestoSection() {
             className="manifesto__video"
             src="/homepagedeomo.mp4"
             playsInline
+            muted={isMuted}
+            preload="metadata"
             onEnded={() => setPlaying(false)}
           />
 
